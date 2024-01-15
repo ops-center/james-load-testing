@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	openapi "github.com/searchlight/james-load-testing/james-go-client"
+	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 	"log"
 	"math/rand"
@@ -25,7 +26,8 @@ var (
 	ApacheJamesWebAdminEndpoint = "http://james.appscode.ninja"
 	ApacheJamesWebAdminPort     = "8000"
 	ApacheJamesJMAPEndpoint     = ""
-	RunLoadTestingForMinute     = time.Hour
+	RunLoadTestingForMinute     = 60
+	ReqPerSecondForLoadTesting  = 10
 
 	TestingDomain           = "load.testing"
 	UserEmailPattern        = "user_%v@" + TestingDomain
@@ -33,6 +35,7 @@ var (
 	GroupPattern            = "group_%v@" + TestingDomain
 	GroupMembers            = make([][]int, NoOfMailingList+1)
 	EmailCountsOfUsers      = make([]int, NoOfUsers+1)
+	NumberOfMemberPerGroup  = 20
 	mu                      = sync.Mutex{}
 )
 
@@ -49,6 +52,39 @@ func GetApacheJamesApiClient() *openapi.APIClient {
 }
 
 func main() {
+	app := cli.NewApp()
+	app.Name = "James load testing"
+	app.Usage = "To load test the apache james server"
+	app.Commands = []cli.Command{
+		CmdLoadTesting,
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatalf("failed to run app with %s: %v", os.Args, err)
+	}
+}
+
+var CmdLoadTesting = cli.Command{
+	Name:   "testing",
+	Action: RunLoadTesting,
+	Flags: []cli.Flag{
+		cli.IntFlag{
+			Name:  "req_per_second",
+			Value: 10,
+		},
+		cli.IntFlag{
+			Name:  "run_for_minutes",
+			Value: 60,
+		},
+	},
+}
+
+func RunLoadTesting(ctx *cli.Context) {
+	// Get the cli options
+	RunLoadTestingForMinute = ctx.Int("run_for_minutes")
+	ReqPerSecondForLoadTesting = ctx.Int("req_per_second")
+
 	initiate()
 
 	eg := errgroup.Group{}
@@ -245,7 +281,7 @@ func assignUsersToGroups() error {
 				localErrGroup.SetLimit(10)
 				localGroupNoCopy := groupNo
 
-				for rn := 1; rn <= 100; rn++ {
+				for rn := 1; rn <= NumberOfMemberPerGroup; rn++ {
 					func(groupNo int, groupPattern, userPattern string) {
 						localErrGroup.Go(func() error {
 							apiClient := GetApacheJamesApiClient()
@@ -320,9 +356,10 @@ this is the attachment text
 
 func startBulkProcess() {
 	var (
-		maxGoRoutineLimit = runtime.NumCPU() * 3
+		maxGoRoutineLimit = ReqPerSecondForLoadTesting
+		reqInterval       = time.Second / time.Duration(ReqPerSecondForLoadTesting)
 		eg                = errgroup.Group{}
-		osSignalChan      = make(chan os.Signal)
+		osSignalChan      = make(chan os.Signal, 1)
 	)
 	// Catch the os signal
 	signal.Notify(osSignalChan, os.Interrupt, os.Kill)
@@ -330,36 +367,41 @@ func startBulkProcess() {
 	// set the maximum go routine supported
 	eg.SetLimit(maxGoRoutineLimit)
 
-	log.Printf("started load testing")
+	log.Printf("Started load testing at time: %v", time.Now())
+	finishingTrigger := time.NewTicker(time.Minute * time.Duration(RunLoadTestingForMinute))
 	for {
 		select {
 		case <-osSignalChan:
+			log.Printf("Process cancled by os signal")
+			return
+		case <-finishingTrigger.C:
+			log.Printf("Time has ended, time: %v", time.Now())
 			return
 		default:
+			func(userAddrPattern, groupAddrPattern, mimeBody string) {
+				eg.Go(func() error {
+					randomUserNo := rand.Intn(NoOfUsers) + 1
+					randomGroupNo := rand.Intn(NoOfMailingList) + 1
 
+					userEmailAddr := fmt.Sprintf(userAddrPattern, randomUserNo)
+					groupEmailAddr := fmt.Sprintf(groupAddrPattern, randomGroupNo)
+
+					emailMimeBody := fmt.Sprintf(mimeBody, userEmailAddr, groupEmailAddr)
+					apiClient := GetApacheJamesApiClient()
+					r, err := apiClient.SendMailAPI.SendEmail(context.Background()).Body(emailMimeBody).Execute()
+					if err != nil {
+						log.Printf("failed to send mail, err: %v", err)
+					} else if r.StatusCode >= 300 {
+						log.Printf("failed to send mail, err: %v", err)
+					} else {
+						log.Printf("successflly send email, from: %v, to group; %v", userEmailAddr, groupEmailAddr)
+					}
+
+					return nil
+				})
+			}(UserEmailPattern, GroupPattern, sampleMIME)
+
+			time.Sleep(reqInterval)
 		}
-		func(userAddrPattern, groupAddrPattern, mimeBody string) {
-			eg.Go(func() error {
-				randomUserNo := rand.Intn(NoOfUsers) + 1
-				randomGroupNo := rand.Intn(NoOfMailingList) + 1
-
-				userEmailAddr := fmt.Sprintf(userAddrPattern, randomUserNo)
-				groupEmailAddr := fmt.Sprintf(groupAddrPattern, randomGroupNo)
-
-				emailMimeBody := fmt.Sprintf(mimeBody, userEmailAddr, groupEmailAddr)
-
-				apiClient := GetApacheJamesApiClient()
-				r, err := apiClient.SendMailAPI.SendEmail(context.Background()).Body(emailMimeBody).Execute()
-				if err != nil {
-					log.Printf("failed to send mail, err: %v", err)
-				} else if r.StatusCode >= 300 {
-					log.Printf("failed to send mail, err: %v", err)
-				} else {
-					log.Printf("successflly send email, from: %v, to group; %v", userEmailAddr, groupEmailAddr)
-				}
-
-				return nil
-			})
-		}(UserEmailPattern, GroupPattern, sampleMIME)
 	}
 }

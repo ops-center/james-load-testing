@@ -1,3 +1,5 @@
 # ignore editor files
 .idea
 .vscode
+.go
+bin
