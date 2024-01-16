@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	openapi "github.com/searchlight/james-load-testing/james-go-client"
+	openapi "github.com/searchlight/james-go-client"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 	"log"
@@ -25,6 +25,8 @@ var (
 	PrometheusEndpoint          = ""
 	ApacheJamesWebAdminEndpoint = "http://james.appscode.ninja"
 	ApacheJamesWebAdminPort     = "8000"
+	ApacheJamesWebAdminUsername = ""
+	ApacheJamesWebAdminPassword = ""
 	ApacheJamesJMAPEndpoint     = ""
 	RunLoadTestingForMinute     = 60
 	ReqPerSecondForLoadTesting  = 10
