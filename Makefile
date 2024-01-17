@@ -18,7 +18,7 @@ PRODUCT_OWNER_NAME := appscode
 PRODUCT_NAME       := james-load-testing
 ENFORCE_LICENSE    ?=
 
-GO_PKG   := github.com/kluster-manager
+GO_PKG   := github.com/searchlight
 REPO     := $(notdir $(shell pwd))
 BIN      := james-load-testing
 COMPRESS ?= no
@@ -28,7 +28,7 @@ CODE_GENERATOR_IMAGE ?= ghcr.io/appscode/gengo:release-1.29
 API_GROUPS           ?= fluxcd:v1alpha1
 
 # Where to push the docker image.
-REGISTRY ?= ghcr.io/kluster-manager
+REGISTRY ?= ghcr.io/searchlight
 SRC_REG  ?=
 
 # This version-strategy uses git tags to set the version string

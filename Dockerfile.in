@@ -14,7 +14,7 @@
 
 FROM {ARG_FROM}
 
-LABEL org.opencontainers.image.source https://github.com/kluster-manager/fluxcd-addon
+LABEL org.opencontainers.image.source https://github.com/searchlight/james-load-testing
 
 RUN set -x \
   && apk add --update --upgrade --no-cache pcre2 ca-certificates tzdata \

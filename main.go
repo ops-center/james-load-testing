@@ -23,13 +23,13 @@ const (
 
 var (
 	PrometheusEndpoint          = ""
-	ApacheJamesWebAdminEndpoint = "http://james.appscode.ninja"
-	ApacheJamesWebAdminPort     = "8000"
-	ApacheJamesWebAdminUsername = ""
-	ApacheJamesWebAdminPassword = ""
+	ApacheJamesWebAdminEndpoint = ""
+	ApacheJamesWebAdminPort     = ""
+	ApacheJamesWebAdminToken    = ""
 	ApacheJamesJMAPEndpoint     = ""
-	RunLoadTestingForMinute     = 60
-	ReqPerSecondForLoadTesting  = 10
+
+	RunLoadTestingForMinute    = 60
+	ReqPerSecondForLoadTesting = 10
 
 	TestingDomain           = "load.testing"
 	UserEmailPattern        = "user_%v@" + TestingDomain
