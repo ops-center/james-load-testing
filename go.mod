@@ -3,6 +3,7 @@ module github.com/searchlight/james-load-testing
 go 1.21.5
 
 require (
+	github.com/joho/godotenv v1.5.1
 	github.com/searchlight/james-go-client v0.0.0-20240116070244-40b7d32321c4
 	github.com/urfave/cli v1.22.14
 	golang.org/x/sync v0.6.0

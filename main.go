@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	goenv "github.com/joho/godotenv"
 	openapi "github.com/searchlight/james-go-client"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -12,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 )
@@ -30,6 +32,7 @@ var (
 
 	RunLoadTestingForMinute    = 60
 	ReqPerSecondForLoadTesting = 10
+	NumberOfMemberPerGroup     = 20
 
 	TestingDomain           = "load.testing"
 	UserEmailPattern        = "user_%v@" + TestingDomain
@@ -37,12 +40,11 @@ var (
 	GroupPattern            = "group_%v@" + TestingDomain
 	GroupMembers            = make([][]int, NoOfMailingList+1)
 	EmailCountsOfUsers      = make([]int, NoOfUsers+1)
-	NumberOfMemberPerGroup  = 20
 	mu                      = sync.Mutex{}
 )
 
 func GetApacheJamesApiClient() *openapi.APIClient {
-	configuration := openapi.NewConfiguration()
+	configuration := openapi.NewConfiguration().WithAccessToken(ApacheJamesWebAdminPort)
 	mu.Lock()
 	configuration.Servers[0] = openapi.ServerConfiguration{
 		URL: fmt.Sprintf("%v:%v", ApacheJamesWebAdminEndpoint, ApacheJamesWebAdminPort),
@@ -68,7 +70,7 @@ func main() {
 }
 
 var CmdLoadTesting = cli.Command{
-	Name:   "testing",
+	Name:   "loadtest",
 	Action: RunLoadTesting,
 	Flags: []cli.Flag{
 		cli.IntFlag{
@@ -79,13 +81,30 @@ var CmdLoadTesting = cli.Command{
 			Name:  "run_for_minutes",
 			Value: 60,
 		},
+		cli.IntFlag{
+			Name:  "member_per_group",
+			Value: 20,
+		},
 	},
 }
 
 func RunLoadTesting(ctx *cli.Context) {
+	// Load environment variables from .env file
+	loadEnv()
+
 	// Get the cli options
 	RunLoadTestingForMinute = ctx.Int("run_for_minutes")
 	ReqPerSecondForLoadTesting = ctx.Int("req_per_second")
+	NumberOfMemberPerGroup = ctx.Int("member_per_group")
+
+	// Get options from env file
+	ApacheJamesWebAdminEndpoint = os.Getenv("URL")
+	ApacheJamesWebAdminPort = os.Getenv("HTTP_PORT")
+	ApacheJamesWebAdminToken = os.Getenv("ADMIN_TOKEN")
+
+	if err := testServerConnectivity(); err != nil {
+		log.Fatalf("can't connect with the admin service, err: %v", err)
+	}
 
 	initiate()
 
@@ -101,6 +120,27 @@ func RunLoadTesting(ctx *cli.Context) {
 
 	log.Printf("No of email sending reports")
 	clean()
+}
+
+func loadEnv() {
+	err := goenv.Load(".env")
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+}
+
+func testServerConnectivity() error {
+	client := GetApacheJamesApiClient()
+	sts, r, err := client.HealthcheckAPI.CheckAllComponents(context.TODO()).Execute()
+	if err != nil {
+		return err
+	}
+
+	if r.StatusCode != 200 || *sts.Status != "healthy" {
+		return fmt.Errorf("health check failed: statusCode: %v", err)
+	}
+
+	return nil
 }
 
 func initiate() {
@@ -406,4 +446,9 @@ func startBulkProcess() {
 			time.Sleep(reqInterval)
 		}
 	}
+}
+
+// IsEmptyString checks if the provided string is empty
+func IsEmptyString(s string) bool {
+	return len(strings.TrimSpace(s)) == 0
 }
