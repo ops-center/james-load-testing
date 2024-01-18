@@ -44,7 +44,7 @@ var (
 )
 
 func GetApacheJamesApiClient() *openapi.APIClient {
-	configuration := openapi.NewConfiguration().WithAccessToken(ApacheJamesWebAdminPort)
+	configuration := openapi.NewConfiguration().WithAccessToken(ApacheJamesWebAdminToken)
 	mu.Lock()
 	configuration.Servers[0] = openapi.ServerConfiguration{
 		URL: fmt.Sprintf("%v:%v", ApacheJamesWebAdminEndpoint, ApacheJamesWebAdminPort),
