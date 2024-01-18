@@ -102,30 +102,32 @@ func RunLoadTesting(ctx *cli.Context) {
 	ApacheJamesWebAdminPort = os.Getenv("HTTP_PORT")
 	ApacheJamesWebAdminToken = os.Getenv("ADMIN_TOKEN")
 
+	log.Printf("RunLoadTestingForMinute: %v", RunLoadTestingForMinute)
+	log.Printf("ReqPerSecondForLoadTesting: %v", ReqPerSecondForLoadTesting)
+	log.Printf("NumberOfMemberPerGroup: %v", NumberOfMemberPerGroup)
+
+	log.Printf("ApacheJamesWebAdminEndpoint: %v", ApacheJamesWebAdminEndpoint)
+	log.Printf("ApacheJamesWebAdminPort: %v", ApacheJamesWebAdminPort)
+	log.Printf("ApacheJamesWebAdminToken: %v", ApacheJamesWebAdminToken)
+
 	if err := testServerConnectivity(); err != nil {
 		log.Fatalf("can't connect with the admin service, err: %v", err)
 	}
 
+	// initiate server
 	initiate()
 
-	eg := errgroup.Group{}
-	eg.SetLimit(1)
+	// start load testing process
+	startBulkProcess()
 
-	eg.Go(func() error {
-		// start the load testing
-		startBulkProcess()
-		return nil
-	})
-	_ = eg.Wait()
-
-	log.Printf("No of email sending reports")
+	// clean the server
 	clean()
 }
 
 func loadEnv() {
 	err := goenv.Load(".env")
 	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+		log.Printf("Error loading .env file: %v", err)
 	}
 }
 
@@ -398,10 +400,15 @@ this is the attachment text
 
 func startBulkProcess() {
 	var (
-		maxGoRoutineLimit = ReqPerSecondForLoadTesting
-		reqInterval       = time.Second / time.Duration(ReqPerSecondForLoadTesting)
-		eg                = errgroup.Group{}
-		osSignalChan      = make(chan os.Signal, 1)
+		maxGoRoutineLimit         = ReqPerSecondForLoadTesting
+		reqInterval               = time.Second / time.Duration(ReqPerSecondForLoadTesting)
+		eg                        = errgroup.Group{}
+		osSignalChan              = make(chan os.Signal, 1)
+		finishingTrigger          = time.NewTicker(time.Minute * time.Duration(RunLoadTestingForMinute))
+		logPrintingTrigger        = time.NewTicker(time.Second * 10)
+		numberOfSuccessfulReqSent = 0
+		numberOfFailedReq         = 0
+		mu                        = sync.Mutex{}
 	)
 	// Catch the os signal
 	signal.Notify(osSignalChan, os.Interrupt, os.Kill)
@@ -410,7 +417,6 @@ func startBulkProcess() {
 	eg.SetLimit(maxGoRoutineLimit)
 
 	log.Printf("Started load testing at time: %v", time.Now())
-	finishingTrigger := time.NewTicker(time.Minute * time.Duration(RunLoadTestingForMinute))
 	for {
 		select {
 		case <-osSignalChan:
@@ -419,6 +425,10 @@ func startBulkProcess() {
 		case <-finishingTrigger.C:
 			log.Printf("Time has ended, time: %v", time.Now())
 			return
+		case <-logPrintingTrigger.C:
+			mu.Lock()
+			log.Printf("Stats: No of successfull req: %v, No of failed req: %v", numberOfSuccessfulReqSent, numberOfFailedReq)
+			mu.Unlock()
 		default:
 			func(userAddrPattern, groupAddrPattern, mimeBody string) {
 				eg.Go(func() error {
@@ -432,10 +442,19 @@ func startBulkProcess() {
 					apiClient := GetApacheJamesApiClient()
 					r, err := apiClient.SendMailAPI.SendEmail(context.Background()).Body(emailMimeBody).Execute()
 					if err != nil {
+						mu.Lock()
+						numberOfFailedReq++
+						mu.Unlock()
 						log.Printf("failed to send mail, err: %v", err)
 					} else if r.StatusCode >= 300 {
+						mu.Lock()
+						numberOfFailedReq++
+						mu.Unlock()
 						log.Printf("failed to send mail, err: %v", err)
 					} else {
+						mu.Lock()
+						numberOfSuccessfulReqSent++
+						mu.Unlock()
 						log.Printf("successflly send email, from: %v, to group; %v", userEmailAddr, groupEmailAddr)
 					}
 
