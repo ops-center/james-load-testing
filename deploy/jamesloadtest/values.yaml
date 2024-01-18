@@ -1,0 +1,8 @@
+image:
+reqPerSecond: 5
+runForMinutes: 600
+memberPerGroup: 20
+
+url:
+adminToken:
+httpPort: ""

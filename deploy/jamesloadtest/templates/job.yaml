@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: load-testing
+spec:
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: james-load-test
+          image: {{ .Values.image }}
+          args:
+            - loadtest
+            - --run_for_minutes={{ .Values.runForMinutes }}
+            - --req_per_second={{ .Values.reqPerSecond }}
+            - --member_per_group={{ .Values.memberPerGroup }}
+#          volumeMounts:
+#            - name: envs
+#              mountPath: /.env
+          env:
+            - name: URL
+              valueFrom:
+                secretKeyRef:
+                  name: james-secret
+                  key: URL
+            - name: ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: james-secret
+                  key: ADMIN_TOKEN
+            - name: HTTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: james-secret
+                  key: HTTP_PORT
+      restartPolicy: Never
+#      volumes:
+#        - name: secret-volume
+#          secret:
+#            secretName: james-secret
