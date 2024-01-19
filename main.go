@@ -424,12 +424,12 @@ func startBulkProcess() {
 		case <-finishingTrigger.C:
 			log.Printf("Time has ended, time: %v", time.Now())
 			mu.Lock()
-			log.Printf("Stats: successfull req: %v, failed req: %v", numberOfSuccessfulReqSent, numberOfFailedReq)
+			log.Printf("Stats: successful req: %v, failed req: %v", numberOfSuccessfulReqSent, numberOfFailedReq)
 			mu.Unlock()
 			return
 		case <-logPrintingTrigger.C:
 			mu.Lock()
-			log.Printf("Stats: No of successfull req: %v, No of failed req: %v", numberOfSuccessfulReqSent, numberOfFailedReq)
+			log.Printf("Stats: successful req: %v, failed req: %v", numberOfSuccessfulReqSent, numberOfFailedReq)
 			mu.Unlock()
 		default:
 			func(userAddrPattern, groupAddrPattern, mimeBody string) {
