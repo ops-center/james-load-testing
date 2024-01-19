@@ -13,7 +13,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"strings"
 	"sync"
 	"time"
 )
@@ -424,6 +423,9 @@ func startBulkProcess() {
 			return
 		case <-finishingTrigger.C:
 			log.Printf("Time has ended, time: %v", time.Now())
+			mu.Lock()
+			log.Printf("Stats: successfull req: %v, failed req: %v", numberOfSuccessfulReqSent, numberOfFailedReq)
+			mu.Unlock()
 			return
 		case <-logPrintingTrigger.C:
 			mu.Lock()
@@ -465,9 +467,4 @@ func startBulkProcess() {
 			time.Sleep(reqInterval)
 		}
 	}
-}
-
-// IsEmptyString checks if the provided string is empty
-func IsEmptyString(s string) bool {
-	return len(strings.TrimSpace(s)) == 0
 }
