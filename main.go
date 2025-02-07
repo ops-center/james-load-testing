@@ -3,10 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	goenv "github.com/joho/godotenv"
-	openapi "github.com/searchlight/james-go-client"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 	"log"
 	"math/rand"
 	"net/http"
@@ -15,6 +11,12 @@ import (
 	"runtime"
 	"sync"
 	"time"
+
+	openapi "github.com/searchlight/james-go-client"
+
+	goenv "github.com/joho/godotenv"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
