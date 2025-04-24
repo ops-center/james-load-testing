@@ -68,6 +68,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to run app with %s: %v", os.Args, err)
 	}
+	james.SendMailAPIService{}
 }
 
 var CmdLoadTesting = cli.Command{

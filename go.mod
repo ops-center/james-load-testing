@@ -5,6 +5,7 @@ go 1.23.0
 toolchain go1.24.0
 
 require (
+	git.sr.ht/~rockorager/go-jmap v0.5.0
 	github.com/joho/godotenv v1.5.1
 	github.com/searchlight/james-go-client v0.0.0-20240116070244-40b7d32321c4
 	github.com/urfave/cli v1.22.14

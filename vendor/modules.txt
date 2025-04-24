@@ -1,3 +1,7 @@
+# git.sr.ht/~rockorager/go-jmap v0.5.0
+## explicit; go 1.19
+git.sr.ht/~rockorager/go-jmap
+git.sr.ht/~rockorager/go-jmap/mail
 # github.com/cpuguy83/go-md2man/v2 v2.0.2
 ## explicit; go 1.11
 github.com/cpuguy83/go-md2man/v2/md2man
