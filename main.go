@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	openapi "github.com/searchlight/james-go-client"
-
 	goenv "github.com/joho/godotenv"
+	openapi "github.com/searchlight/james-go-client"
 	"github.com/urfave/cli"
+	_ "go.opscenter.dev/james-go-client"
 	"golang.org/x/sync/errgroup"
 )
 
