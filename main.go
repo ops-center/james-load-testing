@@ -15,7 +15,7 @@ import (
 	goenv "github.com/joho/godotenv"
 	openapi "github.com/searchlight/james-go-client"
 	"github.com/urfave/cli"
-	_ "go.opscenter.dev/james-go-client"
+	james "go.opscenter.dev/james-go-client"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -411,6 +411,9 @@ func startBulkProcess() {
 		numberOfFailedReq         = 0
 		mu                        = sync.Mutex{}
 	)
+
+	//client : = james.SendMailAPIService{}.SendEmail(context.Background()).Execute()
+
 	// Catch the os signal
 	signal.Notify(osSignalChan, os.Interrupt, os.Kill)
 
