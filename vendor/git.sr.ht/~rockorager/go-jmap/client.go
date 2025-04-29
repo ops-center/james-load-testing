@@ -95,9 +95,16 @@ func (c *Client) Authenticate() error {
 	if err != nil {
 		return err
 	}
+
+	c.Lock()
 	c.Session = s
+	c.Unlock()
+
 	return nil
 }
+
+// The core capabilty must be included in all method calls
+const CoreURI URI = "urn:ietf:params:jmap:core"
 
 // Do performs a JMAP request and returns the response
 func (c *Client) Do(req *Request) (*Response, error) {
@@ -108,17 +115,34 @@ func (c *Client) Do(req *Request) (*Response, error) {
 		if err != nil {
 			return nil, err
 		}
-	}
-	c.Unlock()
-	// Check the required capabilities before making the request
-	for _, uri := range req.Using {
-		c.Lock()
-		_, ok := c.Session.Capabilities[uri]
+	} else {
 		c.Unlock()
+	}
+	// Ensure the core capability is always included
+	found := false
+	for _, uri := range req.Using {
+		if uri == CoreURI {
+			found = true
+			break
+		}
+	}
+	if !found {
+		req.Using = append(req.Using, CoreURI)
+	}
+
+	// Check the required capabilities before making the request
+	c.Lock()
+	for _, uri := range req.Using {
+		// Check RawCapabilities in case we have asked for unparsed
+		// capabilities, or the core capability
+		_, ok := c.Session.RawCapabilities[uri]
 		if !ok {
+			c.Unlock()
 			return nil, fmt.Errorf("server doesn't support required capability '%s'", uri)
 		}
 	}
+	c.Unlock()
+
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -187,6 +211,8 @@ func (c *Client) UploadWithContext(
 		if err != nil {
 			return nil, err
 		}
+
+		c.Lock()
 	}
 
 	url := strings.ReplaceAll(c.Session.UploadURL, "{accountId}", string(accountID))
@@ -241,6 +267,8 @@ func (c *Client) DownloadWithContext(
 		if err != nil {
 			return nil, err
 		}
+
+		c.Lock()
 	}
 
 	urlRepl := strings.NewReplacer(

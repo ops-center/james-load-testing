@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	goenv "github.com/joho/godotenv"
+	"github.com/searchlight/james-load-testing/inbox"
+	openapi "go.opscenter.dev/james-go-client"
 	"log"
 	"math/rand"
 	"net/http"
@@ -11,11 +14,8 @@ import (
 	"runtime"
 	"sync"
 	"time"
-
-	goenv "github.com/joho/godotenv"
-	openapi "github.com/searchlight/james-go-client"
+	//openapi "github.com/searchlight/james-go-client"
 	"github.com/urfave/cli"
-	james "go.opscenter.dev/james-go-client"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -45,7 +45,7 @@ var (
 )
 
 func GetApacheJamesApiClient() *openapi.APIClient {
-	configuration := openapi.NewConfiguration().WithAccessToken(ApacheJamesWebAdminToken)
+	configuration := openapi.NewConfiguration().WithAccessToken(context.Background(), ApacheJamesWebAdminToken)
 	mu.Lock()
 	configuration.Servers[0] = openapi.ServerConfiguration{
 		URL: fmt.Sprintf("%v:%v", ApacheJamesWebAdminEndpoint, ApacheJamesWebAdminPort),
@@ -68,7 +68,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to run app with %s: %v", os.Args, err)
 	}
-	james.SendMailAPIService{}
+	//james.SendMailAPIService{}
 }
 
 var CmdLoadTesting = cli.Command{
@@ -446,15 +446,12 @@ func startBulkProcess() {
 					userEmailAddr := fmt.Sprintf(userAddrPattern, randomUserNo)
 					groupEmailAddr := fmt.Sprintf(groupAddrPattern, randomGroupNo)
 
-					emailMimeBody := fmt.Sprintf(mimeBody, userEmailAddr, groupEmailAddr)
-					apiClient := GetApacheJamesApiClient()
-					r, err := apiClient.SendMailAPI.SendEmail(context.Background()).Body(emailMimeBody).Execute()
+					err := inbox.SendMail("")
+
+					//emailMimeBody := fmt.Sprintf(mimeBody, userEmailAddr, groupEmailAddr)
+					//apiClient := GetApacheJamesApiClient()
+					//r, err := apiClient.SendMailAPI.SendEmail(context.Background()).Body(emailMimeBody).Execute()
 					if err != nil {
-						mu.Lock()
-						numberOfFailedReq++
-						mu.Unlock()
-						log.Printf("failed to send mail, err: %v", err)
-					} else if r.StatusCode >= 300 {
 						mu.Lock()
 						numberOfFailedReq++
 						mu.Unlock()
