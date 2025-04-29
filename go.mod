@@ -3,7 +3,6 @@ module github.com/searchlight/james-load-testing
 go 1.24.0
 
 require (
-	git.sr.ht/~rockorager/go-jmap v0.5.2
 	github.com/joho/godotenv v1.5.1
 	github.com/urfave/cli v1.22.14
 	go.opscenter.dev/james-go-client v0.0.0-20250417064406-59112977135d
@@ -12,6 +11,7 @@ require (
 )
 
 require (
+	git.sr.ht/~rockorager/go-jmap v0.5.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
@@ -35,3 +35,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace git.sr.ht/~rockorager/go-jmap => github.com/ops-center/go-jmap v0.5.1-0.20250107173053-f306fc3d04c3

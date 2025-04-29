@@ -32,8 +32,7 @@ type Client struct {
 
 // Set the HttpClient to a client which authenticates using the provided
 // username and password
-func (c *Client) WithBasicAuth(username string, password string) *Client {
-	ctx := context.Background()
+func (c *Client) WithBasicAuth(ctx context.Context, username string, password string) *Client {
 	auth := username + ":" + password
 	t := &oauth2.Token{
 		AccessToken: base64.StdEncoding.EncodeToString([]byte(auth)),
@@ -46,8 +45,7 @@ func (c *Client) WithBasicAuth(username string, password string) *Client {
 
 // Set the HttpClient to a client which authenticates using the provided Access
 // Token
-func (c *Client) WithAccessToken(token string) *Client {
-	ctx := context.Background()
+func (c *Client) WithAccessToken(ctx context.Context, token string) *Client {
 	t := &oauth2.Token{
 		AccessToken: token,
 		TokenType:   "bearer",
@@ -103,9 +101,6 @@ func (c *Client) Authenticate() error {
 	return nil
 }
 
-// The core capabilty must be included in all method calls
-const CoreURI URI = "urn:ietf:params:jmap:core"
-
 // Do performs a JMAP request and returns the response
 func (c *Client) Do(req *Request) (*Response, error) {
 	c.Lock()
@@ -118,31 +113,15 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	} else {
 		c.Unlock()
 	}
-	// Ensure the core capability is always included
-	found := false
-	for _, uri := range req.Using {
-		if uri == CoreURI {
-			found = true
-			break
-		}
-	}
-	if !found {
-		req.Using = append(req.Using, CoreURI)
-	}
-
 	// Check the required capabilities before making the request
-	c.Lock()
 	for _, uri := range req.Using {
-		// Check RawCapabilities in case we have asked for unparsed
-		// capabilities, or the core capability
-		_, ok := c.Session.RawCapabilities[uri]
+		c.Lock()
+		_, ok := c.Session.Capabilities[uri]
+		c.Unlock()
 		if !ok {
-			c.Unlock()
 			return nil, fmt.Errorf("server doesn't support required capability '%s'", uri)
 		}
 	}
-	c.Unlock()
-
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -211,8 +190,6 @@ func (c *Client) UploadWithContext(
 		if err != nil {
 			return nil, err
 		}
-
-		c.Lock()
 	}
 
 	url := strings.ReplaceAll(c.Session.UploadURL, "{accountId}", string(accountID))
@@ -229,7 +206,7 @@ func (c *Client) UploadWithContext(
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		return nil, decodeHttpError(resp)
 	}
 
@@ -267,8 +244,6 @@ func (c *Client) DownloadWithContext(
 		if err != nil {
 			return nil, err
 		}
-
-		c.Lock()
 	}
 
 	urlRepl := strings.NewReplacer(

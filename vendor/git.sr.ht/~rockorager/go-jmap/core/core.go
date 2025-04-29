@@ -2,6 +2,8 @@ package core
 
 import "git.sr.ht/~rockorager/go-jmap"
 
+const URI jmap.URI = "urn:ietf:params:jmap:core"
+
 func init() {
 	jmap.RegisterCapability(&Core{})
 	jmap.RegisterMethod("Core/echo", newEcho)
@@ -24,6 +26,6 @@ type Core struct {
 	CollationAlgorithms []jmap.CollationAlgo `json:"collationAlgorithms"`
 }
 
-func (c *Core) URI() jmap.URI { return jmap.CoreURI }
+func (c *Core) URI() jmap.URI { return URI }
 
 func (c *Core) New() jmap.Capability { return &Core{} }

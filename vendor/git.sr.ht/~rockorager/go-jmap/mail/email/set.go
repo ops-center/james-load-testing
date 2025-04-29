@@ -17,6 +17,8 @@ type Set struct {
 	Update map[jmap.ID]jmap.Patch `json:"update,omitempty"`
 
 	Destroy []jmap.ID `json:"destroy,omitempty"`
+
+	ReferenceDestroyIDs *jmap.ResultReference `json:"#destroy,omitempty"`
 }
 
 func (m *Set) Name() string { return "Email/set" }

@@ -1,5 +1,5 @@
-# git.sr.ht/~rockorager/go-jmap v0.5.2
-## explicit; go 1.19
+# git.sr.ht/~rockorager/go-jmap v0.5.2 => github.com/ops-center/go-jmap v0.5.1-0.20250107173053-f306fc3d04c3
+## explicit; go 1.22
 git.sr.ht/~rockorager/go-jmap
 git.sr.ht/~rockorager/go-jmap/core
 git.sr.ht/~rockorager/go-jmap/mail
@@ -131,3 +131,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.4.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml/goyaml.v2
+# git.sr.ht/~rockorager/go-jmap => github.com/ops-center/go-jmap v0.5.1-0.20250107173053-f306fc3d04c3

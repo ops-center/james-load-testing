@@ -3,14 +3,11 @@ package inbox
 import (
 	"bytes"
 	"fmt"
-	"git.sr.ht/~rockorager/go-jmap"
-	_ "git.sr.ht/~rockorager/go-jmap/mail"
 	james_go "go.opscenter.dev/james-go-client/inbox"
 	"html/template"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"sort"
-	"sync"
 	"time"
 )
 
@@ -38,17 +35,6 @@ type DiagnosticResult struct {
 type DiagnosticOutput struct {
 	Description string
 	Content     []byte
-}
-
-type JMAPClient struct {
-	jmap.Client
-	//tokenGetter                 TokenGetterFunc
-	mu                          sync.RWMutex
-	userId                      jmap.ID
-	userEmail                   string
-	mailboxIds                  map[string]jmap.ID
-	lastComputedCacheAtUnixTime int64
-	cachedRenewalErr            error
 }
 
 // GetTestJMAPClient defaults to JWT auth unless ForceBasicAuth is set to true
@@ -86,72 +72,72 @@ type JMAPConf struct {
 }
 */
 
-//func SendMail(testUserRecipient string) error {
-//	testClient, err := GetTestJMAPClient(jmapSessionEndPoint, testuserSender, testuserPassword, true)
-//	if err != nil {
-//		//t.Error("could not create jmap client: ", err)
-//		return err
-//	}
-//	mp := make(map[string]string)
-//	mp["hello"] = "world"
-//	mp["hala"] = "madrid"
-//
-//	var data []byte
-//	for i := 0; i < 1; i++ {
-//		data = append([]byte("Lorem Ipsum is simply dummy text of the printing and typesetting industry."), data...)
-//	}
-//	var data1 []byte
-//	for i := 0; i < 2; i++ {
-//		data1 = append([]byte("Lorem Ipsum is simply dummy text of the printing and typesetting industry."), data1...)
-//	}
-//	var data2 []byte
-//	for i := 0; i < 3; i++ {
-//		data2 = append([]byte("Lorem Ipsum is simply dummy text of the printing and typesetting industry."), data2...)
-//	}
-//	var data3 []byte
-//	for i := 0; i < 4; i++ {
-//		data3 = append([]byte("Lorem Ipsum is simply dummy text of the printing and typesetting industry."), data3...)
-//	}
-//	result := []DiagnosticResult{
-//		{
-//			CheckType: "InspectLogs",
-//			Timestamp: metav1.Now(),
-//			Outputs: []DiagnosticOutput{
-//				{Description: "Log 1", Content: data},
-//				{Description: "Log 2", Content: data1},
-//				{Description: "Log 3", Content: data2},
-//				{Description: "Log 4", Content: data3},
-//			},
-//		},
-//		{
-//			CheckType: "InspectConditions",
-//			Timestamp: metav1.Date(2010, 11, 1, 1, 1, 1, 1, time.Local),
-//			Outputs: []DiagnosticOutput{
-//				{Description: "Log 1", Content: data1},
-//				{Description: "Log 2", Content: data2},
-//				{Description: "Log 3", Content: data3},
-//				{Description: "Log 4", Content: data1},
-//			},
-//		},
-//	}
-//
-//	out, err := GetOutput(mp, result)
-//	if err != nil {
-//		return err
-//	}
-//	emailOptions := []james_go.Option{
-//		james_go.WithSubject("Test"),
-//		james_go.WithHTMLBody(out),
-//		james_go.WithRecipients([]string{testUserRecipient}),
-//	}
-//	myMail, _ := testClient.NewEmail(emailOptions...)
-//	err = testClient.SendEmail(myMail)
-//	if err != nil {
-//		fmt.Println(err)
-//		return err
-//	}
-//	return nil
-//}
+func SendMail(testUserRecipient string) error {
+	testClient, err := GetTestJMAPClient(jmapSessionEndPoint, testuserSender, testuserPassword, true)
+	if err != nil {
+		//t.Error("could not create jmap client: ", err)
+		return err
+	}
+	mp := make(map[string]string)
+	mp["hello"] = "world"
+	mp["hala"] = "madrid"
+
+	var data []byte
+	for i := 0; i < 1; i++ {
+		data = append([]byte("Lorem Ipsum is simply dummy text of the printing and typesetting industry."), data...)
+	}
+	var data1 []byte
+	for i := 0; i < 2; i++ {
+		data1 = append([]byte("Lorem Ipsum is simply dummy text of the printing and typesetting industry."), data1...)
+	}
+	var data2 []byte
+	for i := 0; i < 3; i++ {
+		data2 = append([]byte("Lorem Ipsum is simply dummy text of the printing and typesetting industry."), data2...)
+	}
+	var data3 []byte
+	for i := 0; i < 4; i++ {
+		data3 = append([]byte("Lorem Ipsum is simply dummy text of the printing and typesetting industry."), data3...)
+	}
+	result := []DiagnosticResult{
+		{
+			CheckType: "InspectLogs",
+			Timestamp: metav1.Now(),
+			Outputs: []DiagnosticOutput{
+				{Description: "Log 1", Content: data},
+				{Description: "Log 2", Content: data1},
+				{Description: "Log 3", Content: data2},
+				{Description: "Log 4", Content: data3},
+			},
+		},
+		{
+			CheckType: "InspectConditions",
+			Timestamp: metav1.Date(2010, 11, 1, 1, 1, 1, 1, time.Local),
+			Outputs: []DiagnosticOutput{
+				{Description: "Log 1", Content: data1},
+				{Description: "Log 2", Content: data2},
+				{Description: "Log 3", Content: data3},
+				{Description: "Log 4", Content: data1},
+			},
+		},
+	}
+
+	out, err := GetOutput(mp, result)
+	if err != nil {
+		return err
+	}
+	emailOptions := []james_go.Option{
+		james_go.WithSubject("Test"),
+		james_go.WithHTMLBody(out),
+		james_go.WithRecipients([]string{testUserRecipient}),
+	}
+	myMail, _ := testClient.NewEmail(emailOptions...)
+	err = testClient.SendEmail(myMail)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
 
 func GetOutput(vars map[string]string, results []DiagnosticResult) (string, error) {
 	sortedKeys := make([]string, 0, len(vars))
