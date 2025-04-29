@@ -4,15 +4,15 @@ go 1.24.0
 
 require (
 	github.com/joho/godotenv v1.5.1
-	github.com/urfave/cli v1.22.14
+	github.com/urfave/cli v1.22.16
 	go.opscenter.dev/james-go-client v0.0.0-20250417064406-59112977135d
-	golang.org/x/sync v0.12.0
+	golang.org/x/sync v0.13.0
 	k8s.io/apimachinery v0.33.0
 )
 
 require (
 	git.sr.ht/~rockorager/go-jmap v0.5.2 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

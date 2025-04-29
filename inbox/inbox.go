@@ -56,21 +56,10 @@ func GetTestJMAPClient(
 		TokenGetter: func() (*http.Client, string, error) {
 			return &http.Client{
 				Transport: &http.Transport{},
-			}, "", nil
+			}, testToken, nil
 		},
 	})
 }
-
-/*
-type JMAPConf struct {
-	JMAPServerAddr      string
-	JMAPServerPort      string
-	JMAPSessionEndpoint string
-	ForceBasicAuth      bool
-	BasicAuthCreds      BasicAuthCredentials
-	TokenGetter         TokenGetterFunc
-}
-*/
 
 func SendMail(testUserRecipient string) error {
 	testClient, err := GetTestJMAPClient(jmapSessionEndPoint, testuserSender, testuserPassword, true)
