@@ -422,6 +422,12 @@ func startBulkProcess() {
 	eg.SetLimit(maxGoRoutineLimit)
 
 	log.Printf("Started load testing at time: %v", time.Now())
+
+	testClient, err := inbox.GetTestJMAPClient()
+	if err != nil {
+		fmt.Errorf("could not create jmap client: ", err)
+		return
+	}
 	for {
 		select {
 		case <-osSignalChan:
@@ -446,7 +452,7 @@ func startBulkProcess() {
 					userEmailAddr := fmt.Sprintf(userAddrPattern, randomUserNo)
 					groupEmailAddr := fmt.Sprintf(groupAddrPattern, randomGroupNo)
 
-					err := inbox.SendMail("")
+					err = inbox.SendMail(testClient)
 
 					//emailMimeBody := fmt.Sprintf(mimeBody, userEmailAddr, groupEmailAddr)
 					//apiClient := GetApacheJamesApiClient()

@@ -1,4 +1,4 @@
-image: shn27/james-load-testing:6c60d0a-dirty_linux_amd64
+image: shn27/james-load-testing:shn27-addSendMail_linux_amd64
 reqPerSecond: 5
 runForMinutes: 600
 memberPerGroup: 20

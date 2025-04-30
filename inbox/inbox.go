@@ -2,6 +2,7 @@ package inbox
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	james_go "go.opscenter.dev/james-go-client/inbox"
 	"html/template"
@@ -12,18 +13,18 @@ import (
 )
 
 const (
-	testServerHostname     = "192.168.0.246"
+	testServerHostname     = "10.2.0.237"
 	testServerJMAPPort     = "80"
 	testServerWebAdminPort = 8000
 	testuserDomain         = "cloud.appscode.com"
-	testuserSender         = "testuser.acc@cloud.appscode.com"
-	//testuserRecipient      = "recipient.acc@cloud.appscode.com"
-	testuserPassword    = "password"
-	testToken           = ""
-	jmapSessionEndPoint = "http://" + testServerHostname + "/jmap/session"
-
-	testRunbookPath = "../../hack/samples/mongodb-down-runbook.yaml"
-	testAlertPath   = "../../hack/samples/webhookalert_mongodb_sample.yaml"
+	testuserSender         = "usr&admin$2@cloud.appscode.com"
+	testuserRecipient      = "usr&admin$1@cloud.appscode.com"
+	testuserPassword       = "password"
+	testToken              = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDI5NTUxMzQ2LCJwZXJtaXNzaW9ucyI6eyJwZXJtLmFkZHJlc3MuZ3JvdXBzLioiOlsiR0VUIiwiUE9TVCIsIkRFTEVURSJdLCJwZXJtLmFkZHJlc3MuZ3JvdXBzLiouKiI6WyJQVVQiLCJERUxFVEUiXX0sInN1YiI6InVzciZhZG1pbiQyQGNsb3VkLmFwcHNjb2RlLmNvbSIsInR5cGUiOiJhZG1pbiJ9.LEHdZ07qjsLaPEAbfdpRY1aq6KDQCJ9z6PkY6QxpcWprAKs4jQu365uqHuMYVxmdauVpoFGaAhs8a_WlGbq8voEzRevxdq6imGQZp0I_F8hnJyBigxDEeDJpEUeCbGUjPWK_FVxzlQtnjzxoqaVPt9NA73szStdEXzNeeX7KjVKWPbLh5WN0hUoHmxazYiBPitsu0IUEbcSQs-sN5Yl_hQjhYhCFi7qmcDSv8vwlKoydzMi93PFLCvuH5pJfpAALzzs2bwcHzPDjM-KhfdhV7AvU87dJBCzh8VzivCoNWXjA5P0EpGN7bkpvLmz3kifSEuUPU_SCX5fTNrPUpVqOag"
+	jmapSessionEndPoint    = "http://" + testServerHostname + ":" + testServerJMAPPort + "/jmap/session"
+	forceBasicAuth         = true
+	testRunbookPath        = "../../hack/samples/mongodb-down-runbook.yaml"
+	testAlertPath          = "../../hack/samples/webhookalert_mongodb_sample.yaml"
 )
 
 type DiagnosticResult struct {
@@ -37,36 +38,33 @@ type DiagnosticOutput struct {
 	Content     []byte
 }
 
-// GetTestJMAPClient defaults to JWT auth unless ForceBasicAuth is set to true
-func GetTestJMAPClient(
-	jmapSessionEndpoint,
-	userEmail,
-	userPassword string,
-	ForceBasicAuth bool,
-) (*james_go.JMAPClient, error) {
+func NewHttpClient() *http.Client {
+
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true, // temporary workaround for testing cross-cluster functionalities
+	}
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
+	return &http.Client{Transport: transport}
+}
+
+// defaults to JWT auth unless ForceBasicAuth is set to true
+func GetTestJMAPClient() (*james_go.JMAPClient, error) {
 	return james_go.NewJMAPClient(&james_go.JMAPConf{
-		JMAPSessionEndpoint: jmapSessionEndpoint,
-		ForceBasicAuth:      ForceBasicAuth,
+		JMAPSessionEndpoint: jmapSessionEndPoint,
+		ForceBasicAuth:      forceBasicAuth,
 		BasicAuthCreds: james_go.BasicAuthCredentials{
-			Username: userEmail,
-			Password: userPassword,
+			Username: testuserSender,
+			Password: testuserPassword,
 		},
 		JMAPServerAddr: testServerHostname,
 		JMAPServerPort: testServerJMAPPort,
 		TokenGetter: func() (*http.Client, string, error) {
-			return &http.Client{
-				Transport: &http.Transport{},
-			}, testToken, nil
+			return NewHttpClient(), testToken, nil
 		},
 	})
 }
 
-func SendMail(testUserRecipient string) error {
-	testClient, err := GetTestJMAPClient(jmapSessionEndPoint, testuserSender, testuserPassword, true)
-	if err != nil {
-		//t.Error("could not create jmap client: ", err)
-		return err
-	}
+func SendMail(testClient *james_go.JMAPClient) error {
 	mp := make(map[string]string)
 	mp["hello"] = "world"
 	mp["hala"] = "madrid"
@@ -117,7 +115,7 @@ func SendMail(testUserRecipient string) error {
 	emailOptions := []james_go.Option{
 		james_go.WithSubject("Test"),
 		james_go.WithHTMLBody(out),
-		james_go.WithRecipients([]string{testUserRecipient}),
+		james_go.WithRecipients([]string{testuserRecipient}),
 	}
 	myMail, _ := testClient.NewEmail(emailOptions...)
 	err = testClient.SendEmail(myMail)
