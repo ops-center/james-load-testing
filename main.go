@@ -93,7 +93,7 @@ var CmdLoadTesting = cli.Command{
 func RunLoadTesting(ctx *cli.Context) {
 	// Load environment variables from .env file
 	loadEnv()
-
+	log.Printf("=====================new================")
 	// Get the cli options
 	RunLoadTestingForMinute = ctx.Int("run_for_minutes")
 	ReqPerSecondForLoadTesting = ctx.Int("req_per_second")
@@ -116,7 +116,7 @@ func RunLoadTesting(ctx *cli.Context) {
 		log.Fatalf("can't connect with the admin service, err: %v", err)
 	}
 
-	// initiate server
+	//initiate server
 	initiate()
 
 	// start load testing process
@@ -452,11 +452,8 @@ func startBulkProcess() {
 					userEmailAddr := fmt.Sprintf(userAddrPattern, randomUserNo)
 					groupEmailAddr := fmt.Sprintf(groupAddrPattern, randomGroupNo)
 
-					err = inbox.SendMail(testClient)
+					err = inbox.SendMail(testClient, groupEmailAddr)
 
-					//emailMimeBody := fmt.Sprintf(mimeBody, userEmailAddr, groupEmailAddr)
-					//apiClient := GetApacheJamesApiClient()
-					//r, err := apiClient.SendMailAPI.SendEmail(context.Background()).Body(emailMimeBody).Execute()
 					if err != nil {
 						mu.Lock()
 						numberOfFailedReq++
