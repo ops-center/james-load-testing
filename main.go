@@ -1,17 +1,21 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	goenv "github.com/joho/godotenv"
 	"github.com/searchlight/james-load-testing/inbox"
 	openapi "go.opscenter.dev/james-go-client"
+	"html/template"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
+	"sort"
 	"sync"
 	"time"
 	//openapi "github.com/searchlight/james-go-client"
@@ -378,27 +382,173 @@ func assignUsersToGroups() error {
 	return nil
 }
 
-var sampleMIME = `From: %v
-To: %v
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-        boundary="XXXXboundary text"
+type DiagnosticResult struct {
+	CheckType string
+	Timestamp metav1.Time
+	Outputs   []DiagnosticOutput
+}
 
-This is a multipart message in MIME format.
+type DiagnosticOutput struct {
+	Description string
+	Content     []byte
+}
 
---XXXXboundary text
-Content-Type: text/plain
+func GetSampleOutput() (string, error) {
+	mp := make(map[string]string)
+	mp["hello"] = "world"
+	mp["hala"] = "madrid"
 
-Sample Body
+	var data []byte
+	for i := 0; i < 1; i++ {
+		data = append([]byte("Lorem Ipsum is simply dummy text of the printing and typesetting industry."), data...)
+	}
+	var data1 []byte
+	for i := 0; i < 2; i++ {
+		data1 = append([]byte("Lorem Ipsum is simply dummy text of the printing and typesetting industry."), data1...)
+	}
+	var data2 []byte
+	for i := 0; i < 3; i++ {
+		data2 = append([]byte("Lorem Ipsum is simply dummy text of the printing and typesetting industry."), data2...)
+	}
+	var data3 []byte
+	for i := 0; i < 4; i++ {
+		data3 = append([]byte("Lorem Ipsum is simply dummy text of the printing and typesetting industry."), data3...)
+	}
+	result := []DiagnosticResult{
+		{
+			CheckType: "InspectLogs",
+			Timestamp: metav1.Now(),
+			Outputs: []DiagnosticOutput{
+				{Description: "Log 1", Content: data},
+				{Description: "Log 2", Content: data1},
+				{Description: "Log 3", Content: data2},
+				{Description: "Log 4", Content: data3},
+			},
+		},
+		{
+			CheckType: "InspectConditions",
+			Timestamp: metav1.Date(2010, 11, 1, 1, 1, 1, 1, time.Local),
+			Outputs: []DiagnosticOutput{
+				{Description: "Log 1", Content: data1},
+				{Description: "Log 2", Content: data2},
+				{Description: "Log 3", Content: data3},
+				{Description: "Log 4", Content: data1},
+			},
+		},
+	}
 
---XXXXboundary text
-Content-Type: text/plain;
-Content-Disposition: attachment;
-        filename="test.txt"
+	out, err := GetOutput(mp, result)
+	if err != nil {
+		return "", err
+	}
+	return out, nil
+}
+func GetOutput(vars map[string]string, results []DiagnosticResult) (string, error) {
+	sortedKeys := make([]string, 0, len(vars))
+	for key := range vars {
+		sortedKeys = append(sortedKeys, key)
+	}
+	sort.Strings(sortedKeys)
 
-this is the attachment text
+	const htmlTemplate = `
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				table-layout: fixed;
+				overflow: auto;
+			}
 
---XXXXboundary text--`
+			th,td {
+				text-align: center;
+				vertical-align: top;
+				border: 1px solid black;
+				padding: 4px;
+				overflow: auto;
+				white-space: pre-wrap;
+				word-wrap: break-word;
+				overflow-wrap: break-word;
+			}
+
+			pre {
+				text-align: left;
+				vertical-align: top;
+				word-wrap: break-word;
+				overflow-wrap: break-word;
+				overflow: auto;
+			}
+
+		</style>
+
+		<title>Diagnostic Results</title>
+	</head>
+	<body>
+		<h3>Diagnostic Results</h3>
+		<div>
+			<ul>
+				{{range $key, $value := .ArgKeys}}
+					<li><strong>{{$key}}: {{$value}}</strong></li>
+				{{end}}
+			</ul>
+		</div>
+		<div>
+			<table>
+				<colgroup>
+					<col style="width: 9.5%;">
+					<col style="width: 7.5%;">
+					<col style="width: 25%;">
+					<col style="width: 53%;">
+				</colgroup>
+				<tr>
+					<th>Check Type</th>
+					<th>Timestamp</th>
+					<th>Description</th>
+					<th>Content</th>
+				</tr>
+				{{range $result := .DiagnosticResults}}
+					{{range $output := $result.Outputs}}
+						<tr>
+							<td>{{$result.CheckType}}</td>
+							<td>{{$result.Timestamp | formatTime}}</td>
+							<td>{{$output.Description}}</td>
+							<td><pre>{{$output.Content | html}}</pre></td>
+						</tr>
+					{{end}}
+				{{end}}
+			</table>
+		</div>
+	</body>
+
+</html>
+`
+	tmpl, err := template.New("html").Funcs(template.FuncMap{
+		"html": func(b []byte) string {
+			return string(b) // In real scenarios, you might want to escape HTML, this is simplified.
+		},
+		"formatTime": func(t metav1.Time) string {
+			return t.Time.Format(time.DateTime)
+		},
+	}).Parse(htmlTemplate)
+	if err != nil {
+		return "", fmt.Errorf("error creating template: %w", err)
+	}
+
+	var htmlBuf bytes.Buffer
+	err = tmpl.Execute(&htmlBuf, struct {
+		DiagnosticResults []DiagnosticResult
+		ArgKeys           map[string]string
+	}{
+		DiagnosticResults: results,
+		ArgKeys:           vars,
+	})
+	if err != nil {
+		return "", fmt.Errorf("error executing template: %w", err)
+	}
+	return htmlBuf.String(), nil
+}
 
 func startBulkProcess() {
 	var (
@@ -428,6 +578,12 @@ func startBulkProcess() {
 		fmt.Errorf("could not create jmap client: ", err)
 		return
 	}
+	output, err := GetSampleOutput()
+	if err != nil {
+		fmt.Errorf("could not get outputs: ", err)
+		return
+	}
+
 	for {
 		select {
 		case <-osSignalChan:
@@ -444,15 +600,13 @@ func startBulkProcess() {
 			log.Printf("Stats: successful req: %v, failed req: %v", numberOfSuccessfulReqSent, numberOfFailedReq)
 			mu.Unlock()
 		default:
-			func(userAddrPattern, groupAddrPattern, mimeBody string) {
+			func(groupAddrPattern string) {
 				eg.Go(func() error {
-					randomUserNo := rand.Intn(NoOfUsers) + 1
 					randomGroupNo := rand.Intn(NoOfMailingList) + 1
 
-					userEmailAddr := fmt.Sprintf(userAddrPattern, randomUserNo)
 					groupEmailAddr := fmt.Sprintf(groupAddrPattern, randomGroupNo)
 
-					err = inbox.SendMail(testClient, groupEmailAddr)
+					err = inbox.SendMail(testClient, groupEmailAddr, output)
 
 					if err != nil {
 						mu.Lock()
@@ -463,12 +617,12 @@ func startBulkProcess() {
 						mu.Lock()
 						numberOfSuccessfulReqSent++
 						mu.Unlock()
-						log.Printf("successflly send email, from: %v, to group; %v", userEmailAddr, groupEmailAddr)
+						log.Printf("successflly send email, from: TEST CLIENT, to group; %v", groupEmailAddr)
 					}
 
 					return nil
 				})
-			}(UserEmailPattern, GroupPattern, sampleMIME)
+			}(GroupPattern)
 
 			time.Sleep(reqInterval)
 		}
