@@ -1,6 +1,7 @@
 package inbox
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	james_go "go.opscenter.dev/james-go-client/inbox"
@@ -8,7 +9,7 @@ import (
 )
 
 const (
-	testServerHostname     = "10.2.0.30"
+	testServerHostname     = "10.2.0.214"
 	testServerJMAPPort     = "80"
 	testServerWebAdminPort = 8000
 	testuserDomain         = "cloud.appscode.com"
@@ -59,6 +60,9 @@ func SendMail(testClient *james_go.JMAPClient, receiverGroup string, output stri
 	emailOptions := []james_go.Option{
 		james_go.WithSubject("Test NOW"),
 		james_go.WithHTMLBody(output),
+		james_go.WithAttachment("one.txt", bytes.NewReader([]byte(output))),
+		james_go.WithAttachment("two.txt", bytes.NewReader([]byte(output))),
+		james_go.WithAttachment("three.txt", bytes.NewReader([]byte(output))),
 		james_go.WithRecipients([]string{receiverGroup}),
 	}
 	myMail, _ := testClient.NewEmail(emailOptions...)
