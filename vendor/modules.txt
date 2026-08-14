@@ -37,22 +37,24 @@ github.com/searchlight/james-go-client
 # github.com/urfave/cli v1.22.14
 ## explicit; go 1.11
 github.com/urfave/cli
-# golang.org/x/net v0.20.0
-## explicit; go 1.18
+# golang.org/x/net v0.55.0
+## explicit; go 1.25.0
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
+golang.org/x/net/internal/httpcommon
+golang.org/x/net/internal/httpsfv
 # golang.org/x/oauth2 v0.16.0
 ## explicit; go 1.18
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sync v0.6.0
-## explicit; go 1.18
+# golang.org/x/sync v0.20.0
+## explicit; go 1.25.0
 golang.org/x/sync/errgroup
-# golang.org/x/text v0.14.0
-## explicit; go 1.18
+# golang.org/x/text v0.37.0
+## explicit; go 1.25.0
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
